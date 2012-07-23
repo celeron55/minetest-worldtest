@@ -1,0 +1,128 @@
+diff --git a/data/builtin.lua b/builtin/builtin.lua
+index bd5adf9..766ea06 100644
+--- a/data/builtin.lua
++++ b/data/builtin.lua
+@@ -867,3 +867,123 @@ 
+ math.randomseed(os.time())
+ 
+ -- END
++-- Worldtest implementation
++
++-- Requires a modified server that will:
++-- - Load or generate all the MapBlocks surrounding the origin
++-- - Quit after 10 seconds from startup
++
++local worldtest = {}
++worldtest.done = false
++worldtest.timer = 0
++worldtest.player_joined = false
++worldtest.errors = 0
++
++function worldtest.out(s)
++	if worldtest.f then
++		worldtest.f:write(s.."\n")
++	end
++	minetest.log("action", "Worldtest(Lua): "..s)
++end
++
++function check_node_name(p, checkname)
++	local readnode = minetest.env:get_node(p)
++	local readname = "<nil>"
++	if readnode then
++		readname = readnode.name
++	end
++	if readname == checkname then
++		worldtest.out("GOOD: "..minetest.pos_to_string(p)..".name = \""..readname.."\"")
++		return
++	end
++	worldtest.errors = worldtest.errors + 1
++	worldtest.out("BAD: "..minetest.pos_to_string(p).." should be \""..checkname.."\", is \""..readname.."\"")
++end
++
++function check_node_light(p, checkday, checknight)
++	local readday = minetest.env:get_node_light(p, 0.5)
++	local readnight = minetest.env:get_node_light(p, 0.0)
++	if readday == checkday and readnight == checknight then
++		worldtest.out("GOOD: "..minetest.pos_to_string(p).." day="..dump(readday).." night="..dump(readnight))
++		return
++	end
++	worldtest.errors = worldtest.errors + 1
++	worldtest.out("BAD: "..minetest.pos_to_string(p).." should have day="..dump(checkday).." night="..dump(checknight)..", has day="..dump(readday).." night="..dump(readnight))
++end
++
++function check_node_meta(p, field, checkvalue)
++	local readvalue = minetest.env:get_meta(p):get_string(field)
++	readvalue = readvalue or ""
++	if readvalue == checkvalue then
++		worldtest.out("GOOD: "..minetest.pos_to_string(p)..".meta[\""..field.."\"] = \""..readvalue.."\"")
++		return
++	end
++	worldtest.errors = worldtest.errors + 1
++	worldtest.out("BAD: "..minetest.pos_to_string(p)..".meta[\""..field.."\"] should be \""..checkvalue.."\", is \""..readvalue.."\"")
++end
++
++function check_node_meta_text(p, checkvalue)
++	local readvalue = minetest.env:get_meta(p):get_text()
++	readvalue = readvalue or ""
++	if readvalue == checkvalue then
++		worldtest.out("GOOD: "..minetest.pos_to_string(p)..".text = \""..readvalue.."\"")
++		return
++	end
++	worldtest.errors = worldtest.errors + 1
++	worldtest.out("BAD: "..minetest.pos_to_string(p)..".text should be \""..checkvalue.."\", is \""..readvalue.."\"")
++end
++
++function worldtest.check_and_set()
++	-- Open result file
++	worldtest.f = io.open("worldtest_result.txt", "w")
++	-- Check nodes
++	check_node_name({x=-1, y=-1, z=-1}, "default:nyancat")
++	check_node_name({x=0, y=3, z=0}, "default:nyancat")
++	check_node_name({x=0, y=2, z=0}, "default:torch")
++	check_node_name({x=0, y=1, z=0}, "default:glass")
++	check_node_name({x=0, y=0, z=0}, "air")
++	check_node_light({x=0, y=2, z=0}, 13, 13)
++	check_node_light({x=0, y=1, z=0}, 12, 12)
++	check_node_light({x=0, y=0, z=0}, 11, 11)
++	check_node_name({x=0, y=0, z=2}, "default:sign_wall")
++	check_node_meta_text({x=0, y=0, z=2}, "Foo Bar")
++	-- Print error count
++	worldtest.out("ERRORS: "..dump(worldtest.errors))
++	-- Close result file
++	worldtest.f:close()
++	-- Set nodes
++	for x0=-1,1 do
++	for y0=-1,3 do
++	for z0=-1,1 do
++		minetest.env:add_node({x=x0, y=y0, z=z0}, {name="default:nyancat"})
++	end
++	end
++	end
++	minetest.env:add_node({x=0, y=2, z=0}, {name="default:torch"})
++	minetest.env:add_node({x=0, y=1, z=0}, {name="default:glass"})
++	minetest.env:add_node({x=0, y=0, z=0}, {name="air"})
++	minetest.env:add_node({x=0, y=0, z=2}, {name="default:sign_wall"})
++	minetest.env:get_meta({x=0, y=0, z=2}):set_text("Foo Bar")
++end
++
++minetest.register_globalstep(function(dtime)
++	if worldtest.done then
++		return
++	end
++	
++	-- Wait until patched server has loaded world
++	worldtest.timer = worldtest.timer + dtime
++	if worldtest.timer < 5 then
++		return
++	end
++
++	minetest.log("action", "Worldtest(Lua): world loaded or generated")
++
++	worldtest.check_and_set()
++
++	minetest.log("action", "Worldtest(Lua): done")
++	
++	-- Patched server will quit in 10s from startup
++	worldtest.done = true
++end)
++

@@ -1,0 +1,92 @@
+diff --git a/src/server.cpp b/src/server.cpp
+index 893d03b..06cdaad 100644
+--- a/src/server.cpp
++++ b/src/server.cpp
+@@ -212,6 +212,10 @@ void * EmergeThread::Thread()
+ 		*/
+ 
+ 		bool only_from_disk = true;
++		// <worldtest hack>
++		// This doesn't seem to really work in our case
++		only_from_disk = false;
++		// </worldtest hack>
+ 
+ 		{
+ 			core::map<u16, u8>::Iterator i;
+@@ -1306,6 +1310,47 @@ void Server::AsyncRunStep()
+ 		}
+ 	}
+ 
++	// <worldtest hack>
++	// Quit when blocks near origin have been loaded or generated
++	{
++		JMutexAutoLock envlock(m_env_mutex);
++		// Make sure EmergeThread runs
++		m_emergethread.trigger();
++		// Check area near origin
++		Map *map = &m_env->getMap();
++		if(
++			map->getBlockNoCreateNoEx(v3s16(0,0,0)) &&
++			map->getBlockNoCreateNoEx(v3s16(0,0,0))->isGenerated() &&
++			map->getBlockNoCreateNoEx(v3s16(0,0,-1)) &&
++			map->getBlockNoCreateNoEx(v3s16(0,0,-1))->isGenerated() &&
++			map->getBlockNoCreateNoEx(v3s16(0,-1,0)) &&
++			map->getBlockNoCreateNoEx(v3s16(0,-1,0))->isGenerated() &&
++			map->getBlockNoCreateNoEx(v3s16(0,-1,-1)) &&
++			map->getBlockNoCreateNoEx(v3s16(0,-1,-1))->isGenerated() &&
++			map->getBlockNoCreateNoEx(v3s16(-1,0,0)) &&
++			map->getBlockNoCreateNoEx(v3s16(-1,0,0))->isGenerated() &&
++			map->getBlockNoCreateNoEx(v3s16(-1,0,-1)) &&
++			map->getBlockNoCreateNoEx(v3s16(-1,0,-1))->isGenerated() &&
++			map->getBlockNoCreateNoEx(v3s16(-1,-1,0)) &&
++			map->getBlockNoCreateNoEx(v3s16(-1,-1,0))->isGenerated() &&
++			map->getBlockNoCreateNoEx(v3s16(-1,-1,-1)) &&
++			map->getBlockNoCreateNoEx(v3s16(-1,-1,-1))->isGenerated()
++		){
++			static bool message_triggered = false;
++			static float t = 0;
++			t += dtime;
++			if(!message_triggered){
++				dstream<<DTIME<<"Worldtest server: Loaded all blocks."<<std::endl;
++				dstream<<DTIME<<"Worldtest server: Will exit after 10 seconds."
++						<<std::endl;
++				message_triggered = true;
++			}
++			if(t >= 10)
++				m_shutdown_requested = true;
++		}
++	}
++	// </worldtest hack>
++
+ 	{
+ 		JMutexAutoLock lock(m_env_mutex);
+ 		// Step environment
+@@ -1318,6 +1363,7 @@ void Server::AsyncRunStep()
+ 	if(m_map_timer_and_unload_interval.step(dtime, map_timer_and_unload_dtime))
+ 	{
+ 		JMutexAutoLock lock(m_env_mutex);
++
+ 		// Run Map's timers and unload unused data
+ 		ScopeProfiler sp(g_profiler, "Server: map timer and unload");
+ 		m_env->getMap().timerUpdate(map_timer_and_unload_dtime,
+@@ -4853,6 +4899,20 @@ void dedicated_server_loop(Server &server, bool &kill)
+ {
+ 	DSTACK(__FUNCTION_NAME);
+ 	
++	// <worldtest hack>
++	// Load or generate blocks near origin
++	dstream<<DTIME<<"Worldtest hack server started."<<std::endl;
++	dstream<<DTIME<<"Will load or generate origin and quit."<<std::endl;
++	server.queueBlockEmerge(v3s16(0,0,0), true);
++	server.queueBlockEmerge(v3s16(0,0,-1), true);
++	server.queueBlockEmerge(v3s16(0,-1,0), true);
++	server.queueBlockEmerge(v3s16(0,-1,-1), true);
++	server.queueBlockEmerge(v3s16(-1,0,0), true);
++	server.queueBlockEmerge(v3s16(-1,0,-1), true);
++	server.queueBlockEmerge(v3s16(-1,-1,0), true);
++	server.queueBlockEmerge(v3s16(-1,-1,-1), true);
++	// </worldtest hack>
++
+	infostream<<DTIME<<std::endl;
+	infostream<<"========================"<<std::endl;
+	infostream<<"Running dedicated server"<<std::endl;
