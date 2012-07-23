@@ -48,11 +48,11 @@ index 893d03b..06cdaad 100644
 +			t += dtime;
 +			if(!message_triggered){
 +				dstream<<DTIME<<"Worldtest server: Loaded all blocks."<<std::endl;
-+				dstream<<DTIME<<"Worldtest server: Will exit after 10 seconds."
++				dstream<<DTIME<<"Worldtest server: Will exit after 5 seconds."
 +						<<std::endl;
 +				message_triggered = true;
 +			}
-+			if(t >= 10)
++			if(t >= 5)
 +				m_shutdown_requested = true;
 +		}
 +	}

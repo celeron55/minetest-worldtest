@@ -165,6 +165,6 @@ done
 
 echo ""
 echo "Result summary:"
-echo -e $result_summary
+echo -e "$result_summary"
 
 # EOF

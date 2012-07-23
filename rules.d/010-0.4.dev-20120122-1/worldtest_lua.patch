@@ -112,7 +112,7 @@ index bd5adf9..766ea06 100644
 +	
 +	-- Wait until patched server has loaded world
 +	worldtest.timer = worldtest.timer + dtime
-+	if worldtest.timer < 5 then
++	if worldtest.timer < 3.5 then
 +		return
 +	end
 +
