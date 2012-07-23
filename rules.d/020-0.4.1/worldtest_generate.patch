@@ -1,5 +1,5 @@
 diff --git a/src/server.cpp b/src/server.cpp
-index 893d03b..a8fb1be 100644
+index 893d03b..06cdaad 100644
 --- a/src/server.cpp
 +++ b/src/server.cpp
 @@ -212,6 +212,10 @@ void * EmergeThread::Thread()
@@ -13,7 +13,7 @@ index 893d03b..a8fb1be 100644
  
  		{
  			core::map<u16, u8>::Iterator i;
-@@ -1306,6 +1310,45 @@ void Server::AsyncRunStep()
+@@ -1306,6 +1310,47 @@ void Server::AsyncRunStep()
  		}
  	}
  
@@ -47,10 +47,12 @@ index 893d03b..a8fb1be 100644
 +			if(!message_triggered){
 +				dstream<<DTIME<<"Worldtest server: Loaded all blocks."<<std::endl;
 +				dstream<<DTIME<<"Worldtest server: Will exit once the Lua part "
-+						<<"sets nyancat into (-1,-1,-1)"<<std::endl;
++						<<"sets \"worldtest_command\" = \"done\"."<<std::endl;
 +				message_triggered = true;
++				g_settings->set("worldtest_command", "loaded");
 +			}
-+			if(m_nodedef->get(map->getNodeNoEx(v3s16(-1,-1,-1))).name == "default:nyancat")
++			if(g_settings->exists("worldtest_command") &&
++					g_settings->get("worldtest_command") == "done")
 +				m_shutdown_requested = true;
 +		}
 +	}
@@ -59,7 +61,7 @@ index 893d03b..a8fb1be 100644
  	{
  		JMutexAutoLock lock(m_env_mutex);
  		// Step environment
-@@ -1318,6 +1361,7 @@ void Server::AsyncRunStep()
+@@ -1318,6 +1363,7 @@ void Server::AsyncRunStep()
  	if(m_map_timer_and_unload_interval.step(dtime, map_timer_and_unload_dtime))
  	{
  		JMutexAutoLock lock(m_env_mutex);
@@ -67,7 +69,7 @@ index 893d03b..a8fb1be 100644
  		// Run Map's timers and unload unused data
  		ScopeProfiler sp(g_profiler, "Server: map timer and unload");
  		m_env->getMap().timerUpdate(map_timer_and_unload_dtime,
-@@ -4853,6 +4897,20 @@ void dedicated_server_loop(Server &server, bool &kill)
+@@ -4853,6 +4899,20 @@ void dedicated_server_loop(Server &server, bool &kill)
  {
  	DSTACK(__FUNCTION_NAME);
  	
