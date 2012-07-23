@@ -86,14 +86,10 @@ for ruledir in $rulesdir/*; do
 	mtdir=$builddir/minetest-$tag
 	# Make package if doesn't already exist
 	pkg="$builddir/$tag.tar"
-	if [ -a "$pkg" ]; then
-		echo "==   Package exists for $tag"
-	else
-		echo "==   Creating package for $tag"
-		pushd $clonedir &>/dev/null
-			git archive --format tar $tag > "$pkg"
-		popd &>/dev/null
-	fi
+	echo "==   Creating package for $tag"
+	pushd $clonedir &>/dev/null
+		git archive --format tar $tag > "$pkg"
+	popd &>/dev/null
 	# Build if hasn't already been built
 	check_built_minetest "$mtdir"
 	if [ "$?" == "0" ]; then
