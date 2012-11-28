@@ -1,6 +1,10 @@
 #!/bin/bash
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-repo=/home/celeron55/softat/minetest
+if ! [ "$#" -eq "1" ]; then
+	echo "Usage: $0 <git repository url>"
+	exit 1
+fi
+repo=$1
 
 workdir=$dir/work
 rulesdir=$dir/rules.d
