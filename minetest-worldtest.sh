@@ -50,11 +50,11 @@ build_minetest ()
 	pkg=$3
 	mtdir=$4
 	
-	rm -rf "$mtdir"
-	mkdir -p "$mtdir"
-	pushd "$mtdir" &>/dev/null
+	rm -rf "$mtdir" || return 1
+	mkdir -p "$mtdir" || return 1
+	pushd "$mtdir" &>/dev/null || return 1
 		# Extract package
-		tar -xf "$pkg"
+		tar -xf "$pkg" || return 1
 		
 		# Patch stuff
 		for patchfile in $ruledir/*.patch; do
@@ -71,6 +71,10 @@ build_minetest ()
 		
 		# Build it
 		cmake . -DRUN_IN_PLACE=1 -DBUILD_CLIENT=0
+		if [ "$?" == "1" ]; then
+			echo "EE     Error preparing build for $tag"
+			return 1
+		fi
 		make -j2
 		if [ "$?" == "1" ]; then
 			echo "EE     Error building $tag"

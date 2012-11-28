@@ -15,10 +15,10 @@ worlddir=$2
 #echo "-- Making world in $worlddir using $gamedir"
 echo "-- Making world `basename $worlddir`"
 
-pushd "$gamedir" &>/dev/null
+pushd "$gamedir" &>/dev/null || exit 1
 # Configuration file is the common runtime configuration method
 echo -e "map-dir = $worlddir\nenable_mapgen_debug_info = true\n" > worldtest_config
-mkdir -p "$worlddir"
+mkdir -p "$worlddir" || exit 1
 if ! [ -a "$worlddir/world.mt" ]; then
 	echo -e 'gameid = minimal' > "$worlddir/world.mt"
 fi
